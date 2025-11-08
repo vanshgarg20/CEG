@@ -1,0 +1,11 @@
+streamlit
+chromadb
+langchain
+langchain-community
+pandas
+python-dotenv
+tiktoken
+requests
+pydantic
+groq
+openai
