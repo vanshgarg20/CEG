@@ -36,9 +36,9 @@ class Chain:
 
         # Support both param names across versions
         try:
-            self.llm = ChatGroq(api_key=api_key, model_name="llama-3.3-70b-versatile", temperature=0)
+            self.llm = ChatGroq(api_key=api_key, model_name="llama-3.1-8b-instant", temperature=0)
         except TypeError:
-            self.llm = ChatGroq(groq_api_key=api_key, model_name="llama-3.3-70b-versatile", temperature=0)
+            self.llm = ChatGroq(groq_api_key=api_key, model_name="llama-3.1-8b-instant", temperature=0)
 
     def extract_jobs(self, cleaned_text: str) -> List[dict[str, Any]]:
         prompt_extract = PromptTemplate.from_template(
