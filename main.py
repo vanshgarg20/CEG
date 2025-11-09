@@ -319,6 +319,7 @@ if generate:
                     data=email_md,
                     file_name=download_name(),
                     mime="text/markdown",
+                    key=f"download_email_{i}", 
                     use_container_width=True,
                     key=f"download_button_{i}",
                 )
