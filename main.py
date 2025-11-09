@@ -320,6 +320,7 @@ if generate:
                     file_name=download_name(),
                     mime="text/markdown",
                     use_container_width=True,
+                    key=f"download_button_{i}",
                 )
                 st.markdown("<hr />", unsafe_allow_html=True)
 
