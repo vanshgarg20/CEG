@@ -131,6 +131,58 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# --------------------- RESPONSIVE STYLES ---------------------
+st.markdown(
+    """
+<style>
+/* base */
+.block-container{max-width:1200px;padding-top:3.75rem;padding-bottom:3rem;overflow:visible}
+@keyframes pulseGradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.hero-wrap{display:inline-flex;align-items:center;gap:.9rem;margin:.25rem auto .4rem;position:relative;left:50%;transform:translateX(-50%);overflow:visible}
+.hero-logo{width:56px;height:56px;padding:6px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#00c6ff,#7b61ff,#ff6ec7);background-size:200% 200%;animation:pulseGradient 6s ease infinite;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.hero-logo svg{width:32px;height:32px;fill:#fff;filter:drop-shadow(0 0 4px rgba(255,255,255,.35))}
+.hero-title{font-size:3rem;font-weight:800;line-height:1.12;background:linear-gradient(90deg,#00c6ff,#7b61ff,#ff6ec7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:220% 220%;animation:pulseGradient 8s ease infinite;white-space:nowrap}
+.hero-sub{text-align:center;font-size:1.12rem;color:#cfcfcf;margin:0 0 1.6rem}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1.2rem 1.4rem;box-shadow:0 12px 30px rgba(0,0,0,.25);backdrop-filter:blur(8px)}
+.chip{display:inline-block;padding:.3rem .65rem;margin:.18rem .3rem .18rem 0;border-radius:999px;border:1px solid rgba(255,255,255,.15);font-size:.85rem}
+.badge{display:inline-block;padding:.25rem .55rem;border-radius:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);font-size:.8rem;margin-left:.35rem;vertical-align:middle}
+hr{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
+.stTextInput > div > div > input{height:3rem;font-size:1rem}
+pre, pre code { white-space: pre-wrap !important; word-break: break-word !important }
+
+/* tablets */
+@media (max-width: 900px){
+  .block-container{max-width:100%;padding-top:2.5rem;padding-left:1rem;padding-right:1rem}
+  .hero-logo{width:48px;height:48px;padding:5px}
+  .hero-logo svg{width:28px;height:28px}
+  .hero-title{font-size:2.2rem;white-space:normal}
+  .hero-sub{font-size:1rem}
+  .card{padding:1rem}
+  .chip{font-size:.8rem}
+  .badge{font-size:.72rem}
+  .stTextInput > div > div > input{height:2.6rem;font-size:.95rem}
+}
+
+/* phones */
+@media (max-width: 600px){
+  .block-container{padding-top:1.5rem;padding-left:.75rem;padding-right:.75rem}
+  .hero-wrap{gap:.6rem}
+  .hero-logo{width:40px;height:40px;padding:4px;border-radius:10px}
+  .hero-logo svg{width:22px;height:22px}
+  .hero-title{font-size:1.6rem;line-height:1.15}
+  .hero-sub{font-size:.95rem;margin-bottom:1.1rem}
+  .card{padding:.85rem;border-radius:14px}
+  .chip{font-size:.75rem;padding:.22rem .5rem}
+  .badge{font-size:.7rem;padding:.2rem .45rem}
+  .stTextInput > div > div > input{height:2.4rem;font-size:.95rem}
+  section.main .stColumns { flex-direction: column !important; gap: .75rem !important }
+  .stButton > button, .stDownloadButton > button { width:100% !important }
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 # --------------------- SIDEBAR ---------------------
 with st.sidebar:
     st.header("⚙️ Settings")
