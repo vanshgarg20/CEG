@@ -74,6 +74,34 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
   .stButton > button, .stDownloadButton > button { width:100% !important }
 }
 </style>
+/* --- Email viewer (no iframe) --- */
+.plain-email{ margin-top:.5rem; margin-bottom:.75rem; } /* ⬅️ tight gap above Download */
+.email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.5rem; }
+.copy-btn{
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.08);
+  padding:.35rem .7rem; border-radius:8px; cursor:pointer; color:inherit;
+}
+.copy-btn:active{ transform:translateY(1px) }
+
+/* the email text block (non-focus, no scrollbar) */
+.emailbox{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;
+  padding:14px;
+  font:0.92rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
+}
+
+/* phone tweaks */
+@media (max-width:600px){
+  .plain-email{ margin-bottom:.6rem; }
+  .emailbox{ font-size:.98rem; line-height:1.5; padding:16px 14px; }
+}
+
+/* hidden textarea used only for copy */
+.hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
 """,
     unsafe_allow_html=True,
 )
@@ -200,6 +228,47 @@ def render_plain_email(idx: int, text: str):
     - Copy button works; theme colors used.
     """
     initial_height = _estimate_iframe_height_for(text)
+
+    st.markdown(
+        f"""
+        <div class="plain-email" id="email_wrap_{idx}">
+          <div class="email-toolbar">
+            <button class="copy-btn" id="copy_btn_{idx}">Copy</button>
+          </div>
+
+          <!-- Read-only email text (non-focus element, no scroll) -->
+          <pre class="emailbox" id="email_view_{idx}">{escape(text)}</pre>
+
+          <!-- Hidden source to preserve exact newlines when copying -->
+          <textarea id="copy_src_{idx}" class="hidden-copy" readonly>{escape(text)}</textarea>
+        </div>
+
+        <script>
+          (function(){{
+            const btn = document.getElementById("copy_btn_{idx}");
+            const src = document.getElementById("copy_src_{idx}");
+            if (btn && src) {{
+              btn.addEventListener("click", async () => {{
+                try {{
+                  src.focus(); src.select();
+                  const ok = document.execCommand("copy");
+                  if (!ok && navigator.clipboard) {{
+                    await navigator.clipboard.writeText(src.value);
+                  }}
+                  const old = btn.innerText;
+                  btn.innerText = "Copied!";
+                  setTimeout(() => btn.innerText = old, 1100);
+                }} catch (e) {{
+                  console.error("Copy failed", e);
+                }}
+              }});
+            }}
+          }})();
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
     template = """<!doctype html>
 <html>
