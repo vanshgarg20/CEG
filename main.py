@@ -160,6 +160,27 @@ with st.sidebar:
 # --------------------- HELPERS ---------------------
 URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 
+def to_plain_text(s: str) -> str:
+    # kill fenced code blocks
+    s = re.sub(r"```.*?```", "", s, flags=re.S)
+    # inline code
+    s = re.sub(r"`([^`]*)`", r"\1", s)
+    # images ![alt](url)
+    s = re.sub(r"!\[.*?\]\(.*?\)", "", s)
+    # links [text](url) -> text
+    s = re.sub(r"\[(.*?)\]\((.*?)\)", r"\1", s)
+    # bold/italics **text** *text* _text_
+    s = re.sub(r"[*_]{1,3}([^*_]+)[*_]{1,3}", r"\1", s)
+    # headings / quotes at line starts: #, ##, >, ---
+    s = re.sub(r"^\s{0,3}#{1,6}\s*", "", s, flags=re.M)
+    s = re.sub(r"^\s{0,3}>\s*", "", s, flags=re.M)
+    s = re.sub(r"^\s*[-*_]{3,}\s*$", "", s, flags=re.M)
+    # bullet markers
+    s = re.sub(r"^\s*[-*•]\s+", "", s, flags=re.M)
+    # collapse extra blank lines
+    s = re.sub(r"\n{3,}", "\n\n", s)
+    return s.strip()
+
 @st.cache_data(ttl=900, show_spinner=False)
 def fetch_and_clean(url: str) -> str:
     doc = WebBaseLoader(url).load()[0]
