@@ -164,21 +164,36 @@ def download_name(prefix="email", ext="txt"):
     return f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
 
 def render_plain_email(idx: int, text: str):
-    """Show the email in a readonly <textarea> with a Copy button (client-side clipboard)."""
+    """Show email in a readonly <textarea> with a working Copy button (no 'Copy code')."""
     st.markdown(
         f"""
         <div class="plain-email">
           <div class="email-toolbar">
-            <button class="copy-btn" onclick="
-              navigator.clipboard.writeText(document.getElementById('email_{idx}').value);
-              const b=this;const t=b.innerText;b.innerText='Copied!';setTimeout(()=>b.innerText=t,1300);
-            ">Copy</button>
+            <button class="copy-btn" id="copy_btn_{idx}">Copy</button>
           </div>
           <textarea id="email_{idx}" readonly>{escape(text)}</textarea>
         </div>
+
+        <script>
+        const copyBtn{idx} = document.getElementById("copy_btn_{idx}");
+        const textarea{idx} = document.getElementById("email_{idx}");
+        if (copyBtn{idx} && textarea{idx}) {{
+            copyBtn{idx}.addEventListener("click", async () => {{
+                try {{
+                    await navigator.clipboard.writeText(textarea{idx}.value);
+                    const original = copyBtn{idx}.innerText;
+                    copyBtn{idx}.innerText = "Copied!";
+                    setTimeout(() => copyBtn{idx}.innerText = original, 1300);
+                }} catch (err) {{
+                    console.error("Copy failed:", err);
+                }}
+            }});
+        }}
+        </script>
         """,
         unsafe_allow_html=True,
     )
+
 
 # --------------------- HERO ---------------------
 st.markdown(
