@@ -50,7 +50,7 @@ hr{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(255,
 pre, pre code { white-space: pre-wrap !important; word-break: break-word !important }
 
 /* ====================== EMAIL VIEWER ====================== */
-.plain-email{ margin-top:.3rem; margin-bottom:.15rem; }  /* almost zero gap */
+.plain-email{ margin-top:.3rem; margin-bottom:.15rem; }  /* super-tight gap */
 .email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.25rem; }
 .copy-btn{
   border:1px solid rgba(255,255,255,.15);
@@ -66,13 +66,27 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
   font:0.92rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
 }
-.hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
 
-/* Tight spacing before Download button */
+/* Hidden textarea for fallback copy (never scroll page) */
+.hidden-copy{
+  position: fixed;
+  top: -1000px; left: -1000px;
+  height: 1px; width: 1px;
+  opacity: 0; pointer-events: none;
+}
+
+/* Tight spacing before Streamlit download button */
 div[data-testid="stDownloadButton"]{
-  margin-top:1px !important;      /* almost touching */
+  margin-top:1px !important;
   margin-bottom:0 !important;
   padding-top:0 !important;
+}
+
+/* Mobile tweaks */
+@media (max-width:600px){
+  .plain-email{ margin-bottom:.1rem; }
+  div[data-testid="stDownloadButton"]{ margin-top:1px !important; }
+  .emailbox{ font-size:.98rem; line-height:1.5; padding:15px 13px; }
 }
 
 /* ====================== RESPONSIVE STYLES ====================== */
@@ -225,133 +239,69 @@ def _estimate_iframe_height_for(text: str) -> int:
     est  += 40
     # Clamp: at least desktop min, at most 4000
     return max(EMAIL_BOX_DESKTOP_HEIGHT + 80, min(est, 4000))
+from html import escape
+import streamlit as st
 
-def render_plain_email(idx: int, text: str):
-    """
-    FINAL: No inner scroll, no overlap, no extra gap.
-    - Desktop: medium look (min height), iframe auto-resizes to exact content.
-    - Mobile: full content (same lines/words), iframe auto-resizes (no cut).
-    - Copy button works; theme colors used.
-    """
-    initial_height = _estimate_iframe_height_for(text)
+def render_plain_email(idx: int, text: str) -> None:
+    """Plain email viewer with Copy button (shows 'Copied!', no page jump)."""
+    html = f"""
+<div class="plain-email" id="email_wrap_{idx}">
+  <div class="email-toolbar">
+    <button class="copy-btn" id="copy_btn_{idx}" type="button">Copy</button>
+  </div>
 
-    template = """<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <style>
-      :root{
-        --bg: %%BG%%; --tx: %%TX%%; --border: %%BORDER%%; --btnbg: %%BTN_BG%%; --areabg: %%AREA_BG%%;
-        --radius: 12px; --fs-d: %%FS_DESKTOP%%; --fs-m: %%FS_MOBILE%%; --lh: %%LH%%;
-        --h-desk: %%H_DESKTOP%%px;
-      }
-      html,body{
-        margin:0; padding:0; background:var(--bg); color:var(--tx);
-        font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
-        overflow:hidden; /* iframe ke andar scroll nahi chahiye */
-      }
-      .wrap{ width:100%; }
-      .toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin:0 0 8px 0; }
-      .btn{
-        border:1px solid var(--border); background:var(--btnbg); color:var(--tx);
-        padding:.35rem .7rem; border-radius:8px; cursor:pointer; font-size:.9rem;
-      }
-      .btn:active{ transform:translateY(1px); }
+  <pre class="emailbox" id="email_view_{idx}">{escape(text)}</pre>
+  <!-- Hidden textarea for fallback copy; positioned so focusing it never scrolls -->
+  <textarea id="copy_src_{idx}" class="hidden-copy" aria-hidden="true" tabindex="-1" readonly>{escape(text)}</textarea>
+</div>
 
-      /* Non-focus email block (no focus ring) */
-      .emailbox{
-        background:var(--areabg);
-        border:1px solid var(--border);
-        border-radius:var(--radius);
-        padding:14px;
-        font: var(--fs-d)/var(--lh) ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-        white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
-        margin:0; /* no big extra margins */
-      }
-      .emailbox:focus, .emailbox:focus-visible{ outline:0; box-shadow:none; }
+<script>
+(function() {{
+  const btn = document.getElementById("copy_btn_{idx}");
+  const src = document.getElementById("copy_src_{idx}");
+  if (!btn || !src) return;
 
-      /* Desktop: give a visual floor height (looks like medium box) */
-      @media (min-width:601px){
-        .emailbox{ min-height:var(--h-desk); }
-      }
-      /* Mobile: comfortable font; natural height */
-      @media (max-width:600px){
-        .emailbox{ font-size:var(--fs-m); line-height:var(--lh); padding:16px 14px; }
-      }
+  btn.addEventListener("click", async (e) => {{
+    e.preventDefault();
+    e.stopPropagation();
 
-      /* Small spacer so Download button has breathing room (not huge) */
-      .spacer{ height: 12px; }
-      /* Hidden textarea for copy preserving linebreaks */
-      textarea.hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <div class="toolbar">
-        <button id="copy_btn_%%IDX%%" class="btn">Copy</button>
-      </div>
-      <pre id="email_view_%%IDX%%" class="emailbox">%%TEXT%%</pre>
-      <div class="spacer"></div>
-      <textarea id="copy_src_%%IDX%%" class="hidden-copy" readonly>%%TEXT%%</textarea>
-    </div>
+    const old = btn.textContent;
+    btn.disabled = true;
 
-    <script>
-      (function(){
-        const btn = document.getElementById('copy_btn_%%IDX%%');
-        const src = document.getElementById('copy_src_%%IDX%%');
-        if (btn && src){
-          btn.addEventListener('click', async () => {
-            try{
-              src.focus(); src.select();
-              const ok = document.execCommand('copy');
-              if (!ok && navigator.clipboard) await navigator.clipboard.writeText(src.value);
-              const old = btn.innerText; btn.innerText = 'Copied!';
-              setTimeout(()=>btn.innerText = old, 1100);
-            }catch(e){ console.error('Copy failed', e); }
-          });
-        }
+    // lock scroll so the page doesn't jump when we focus/select
+    const sx = window.scrollX, sy = window.scrollY;
 
-        // Exact fit — measure wrapper's real height and set iframe to it.
-        function fit(){
-          try{
-            const wrap = document.querySelector('.wrap');
-            const h = Math.ceil(wrap.getBoundingClientRect().height) + 8; // tiny padding
-            if (window.frameElement) window.frameElement.style.height = h + 'px';
-            document.documentElement.style.height = h + 'px';
-          }catch(_){}
-        }
-        // Run multiple times to defeat late font/layout reflows
-        if (window.ResizeObserver){
-          const ro = new ResizeObserver(fit);
-          ro.observe(document.body);
-          ro.observe(document.querySelector('.wrap'));
-        }
-        window.addEventListener('load', fit);
-        window.addEventListener('resize', fit);
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
-        setTimeout(fit, 50); setTimeout(fit, 250); setTimeout(fit, 800);
-      })();
-    </script>
-  </body>
-</html>"""
-
-    html = (
-        template
-        .replace("%%IDX%%", str(idx))
-        .replace("%%TEXT%%", escape(text))
-        .replace("%%BG%%", THEME_BG).replace("%%TX%%", THEME_TX)
-        .replace("%%BORDER%%", BORDER_RG).replace("%%BTN_BG%%", BTN_BG)
-        .replace("%%AREA_BG%%", AREA_BG)
-        .replace("%%FS_DESKTOP%%", EMAIL_FONT_SIZE_DESKTOP)
-        .replace("%%FS_MOBILE%%", EMAIL_FONT_SIZE_MOBILE)
-        .replace("%%LH%%", str(EMAIL_LINE_HEIGHT))
-        .replace("%%H_DESKTOP%%", str(EMAIL_BOX_DESKTOP_HEIGHT))
-    )
-
-    # Initial safe height (mobile + desktop estimate). JS will tighten exactly.
-    components.html(html, height=initial_height, scrolling=False)
-
+    try {{
+      const txt = src.value;
+      if (navigator.clipboard && window.isSecureContext) {{
+        await navigator.clipboard.writeText(txt);
+      }} else {{
+        // fallback copy without scrolling the viewport
+        src.focus({{ preventScroll: true }});
+        src.select();
+        document.execCommand("copy");
+        src.blur();
+      }}
+      btn.textContent = "Copied!";
+      setTimeout(() => {{
+        btn.textContent = old;
+        btn.disabled = false;
+      }}, 1200);
+    }} catch (err) {{
+      console.error("Copy failed", err);
+      btn.textContent = "Copy failed";
+      setTimeout(() => {{
+        btn.textContent = old;
+        btn.disabled = false;
+      }}, 1200);
+    }} finally {{
+      window.scrollTo(sx, sy);
+    }}
+  }});
+}})();
+</script>
+"""
+    st.markdown(html, unsafe_allow_html=True)
 
 # --------------------- HERO ---------------------
 st.markdown(
