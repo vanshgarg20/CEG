@@ -229,47 +229,6 @@ def render_plain_email(idx: int, text: str):
     """
     initial_height = _estimate_iframe_height_for(text)
 
-    st.markdown(
-        f"""
-        <div class="plain-email" id="email_wrap_{idx}">
-          <div class="email-toolbar">
-            <button class="copy-btn" id="copy_btn_{idx}">Copy</button>
-          </div>
-
-          <!-- Read-only email text (non-focus element, no scroll) -->
-          <pre class="emailbox" id="email_view_{idx}">{escape(text)}</pre>
-
-          <!-- Hidden source to preserve exact newlines when copying -->
-          <textarea id="copy_src_{idx}" class="hidden-copy" readonly>{escape(text)}</textarea>
-        </div>
-
-        <script>
-          (function(){{
-            const btn = document.getElementById("copy_btn_{idx}");
-            const src = document.getElementById("copy_src_{idx}");
-            if (btn && src) {{
-              btn.addEventListener("click", async () => {{
-                try {{
-                  src.focus(); src.select();
-                  const ok = document.execCommand("copy");
-                  if (!ok && navigator.clipboard) {{
-                    await navigator.clipboard.writeText(src.value);
-                  }}
-                  const old = btn.innerText;
-                  btn.innerText = "Copied!";
-                  setTimeout(() => btn.innerText = old, 1100);
-                }} catch (e) {{
-                  console.error("Copy failed", e);
-                }}
-              }});
-            }}
-          }})();
-        </script>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
     template = """<!doctype html>
 <html>
   <head>
