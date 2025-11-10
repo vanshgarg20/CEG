@@ -220,48 +220,50 @@ from html import escape
 import streamlit as st
 
 def render_plain_email(idx: int, text: str) -> None:
-    """Plain email viewer with a Copy button (no <script> tag, no page jump)."""
+    """Email box with Copy button inside the top-right corner (clean old style)."""
     st.markdown(
         f"""
 <div class="plain-email" id="email_wrap_{idx}">
-  <div class="email-toolbar">
-    <button class="copy-btn" id="copy_btn_{idx}" type="button"
-      onclick="(function(){{
-        try {{
-          var el = document.getElementById('email_{idx}');
-          var txt = el ? (el.textContent || el.value) : '';
-          if (navigator.clipboard && window.isSecureContext) {{
-            navigator.clipboard.writeText(txt);
-          }} else {{
-            // Fallback copy without scrolling
-            var ta = document.createElement('textarea');
-            ta.value = txt;
-            ta.style.position='fixed';
-            ta.style.top='-1000px';
-            ta.style.left='-1000px';
-            document.body.appendChild(ta);
-            ta.focus({{preventScroll:true}});
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
+  <div class="emailbox">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:6px;">
+      <button class="copy-btn" id="copy_btn_{idx}" type="button"
+        onclick="(function(){{
+          try {{
+            var el = document.getElementById('email_text_{idx}');
+            var txt = el ? (el.textContent || el.value) : '';
+            if (navigator.clipboard && window.isSecureContext) {{
+              navigator.clipboard.writeText(txt);
+            }} else {{
+              var ta = document.createElement('textarea');
+              ta.value = txt;
+              ta.style.position='fixed';
+              ta.style.top='-1000px';
+              ta.style.left='-1000px';
+              document.body.appendChild(ta);
+              ta.focus({{preventScroll:true}});
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+            }}
+            var b = document.getElementById('copy_btn_{idx}');
+            var old = b.innerText;
+            b.innerText = 'Copied!';
+            setTimeout(function(){{ b.innerText = old; }}, 1100);
+          }} catch(e) {{
+            console.error('Copy failed', e);
           }}
-          var b = document.getElementById('copy_btn_{idx}');
-          var old = b.innerText;
-          b.innerText = 'Copied!';
-          setTimeout(function(){{ b.innerText = old; }}, 1100);
-        }} catch(e) {{
-          console.error('Copy failed', e);
-        }}
-      }})()"
-    >Copy</button>
-  </div>
+        }})()"
+      >Copy</button>
+    </div>
 
-  <pre class="emailbox" id="email_{idx}">{escape(text)}</pre>
+    <pre id="email_text_{idx}" style="margin:0; white-space:pre-wrap; word-break:break-word;">
+{escape(text)}
+    </pre>
+  </div>
 </div>
 """,
         unsafe_allow_html=True,
     )
-
 
 # --------------------- HERO ---------------------
 st.markdown(
