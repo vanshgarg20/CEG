@@ -151,8 +151,8 @@ def download_name(prefix="email", ext="txt"):
 
 def render_plain_email(idx: int, text: str):
     """
-    Email textarea + working Copy button rendered in an iframe with Streamlit theme colors.
-    Scrollbar visible (white color), only vertical scroll allowed.
+    Email textarea + working Copy button with ONLY vertical scrolling.
+    Uses Streamlit theme colors; shows vertical scrollbar when needed (stable gutter).
     """
     template = """<!doctype html>
 <html>
@@ -160,65 +160,43 @@ def render_plain_email(idx: int, text: str):
     <meta charset="utf-8"/>
     <style>
       html,body{
-        margin:0;
-        padding:0;
-        background:%%BG%%;
-        color:%%TX%%;
+        margin:0;padding:0;background:%%BG%%;color:%%TX%%;
         font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
-        overflow-y:auto;
-        overflow-x:hidden;
+        overflow-x:hidden; /* no horizontal scroll on iframe */
       }
-      .toolbar{
-        display:flex;
-        justify-content:flex-end;
-        gap:.5rem;
-        margin:8px 0 6px;
-      }
+      .toolbar{display:flex;justify-content:flex-end;gap:.5rem;margin:8px 0 6px}
       .btn{
-        border:1px solid %%BORDER%%;
-        background:%%BTN_BG%%;
-        padding:.35rem .7rem;
-        border-radius:8px;
-        cursor:pointer;
-        color:%%TX%%;
-        font-size:.9rem;
+        border:1px solid %%BORDER%%;background:%%BTN_BG%%;color:%%TX%%;
+        padding:.35rem .7rem;border-radius:8px;cursor:pointer;font-size:.9rem;
       }
       .btn:active{transform:translateY(1px)}
+
+      /* Textarea: vertical scroll only */
       textarea{
         width:100%;
-        height:300px;
+        min-height:220px;               /* enough room before scroll shows */
+        max-height:300px;               /* clamp height -> scroll when longer */
         border:1px solid %%BORDER%%;
-        background:%%AREA_BG%%;
-        color:%%TX%%;
-        border-radius:12px;
+        background:%%AREA_BG%%; color:%%TX%%; border-radius:12px;
         padding:.75rem;
-        font: 0.92rem/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+        font:0.92rem/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
         resize:vertical;
-        overflow-y:scroll;
-        overflow-x:hidden;  /* 🚫 disable horizontal scroll */
-        white-space:pre-wrap; /* wrap long lines instead of horizontal scrolling */
+        overflow-y:auto;                /* show vertical scroll when needed */
+        overflow-x:hidden;              /* NEVER horizontal */
+        white-space:pre-wrap;           /* wrap long lines */
         word-wrap:break-word;
+        scrollbar-gutter:stable both-edges;   /* keep gutter even when not scrolling */
+        -webkit-overflow-scrolling:touch;     /* smooth on iOS */
+        overscroll-behavior:contain;
       }
 
-      /* --- White Scrollbar --- */
-      textarea::-webkit-scrollbar {
-        width: 10px;
-      }
-      textarea::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.7);
-        border-radius: 6px;
-      }
-      textarea::-webkit-scrollbar-thumb:hover {
-        background: rgba(255,255,255,0.9);
-      }
-      textarea::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.15);
-        border-radius: 6px;
-      }
+      /* White scrollbar */
+      textarea::-webkit-scrollbar{ width:10px; }
+      textarea::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.7); border-radius:6px; }
+      textarea::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.9); }
+      textarea::-webkit-scrollbar-track{ background:rgba(255,255,255,.15); border-radius:6px; }
 
-      @media (max-width:600px){
-        textarea{height:260px;}
-      }
+      @media (max-width:600px){ textarea{ max-height:260px; } }
     </style>
   </head>
   <body>
@@ -238,9 +216,7 @@ def render_plain_email(idx: int, text: str):
               const old = btn.innerText;
               btn.innerText = 'Copied!';
               setTimeout(() => btn.innerText = old, 1300);
-            } catch (e) {
-              console.error('Copy failed', e);
-            }
+            } catch (e) { console.error('Copy failed', e); }
           });
         }
       })();
@@ -248,17 +224,16 @@ def render_plain_email(idx: int, text: str):
   </body>
 </html>"""
 
-    html = (
-        template
-        .replace("%%IDX%%", str(idx))
-        .replace("%%TEXT%%", escape(text))
-        .replace("%%BG%%", THEME_BG)
-        .replace("%%TX%%", THEME_TX)
-        .replace("%%BORDER%%", BORDER_RG)
-        .replace("%%BTN_BG%%", BTN_BG)
-        .replace("%%AREA_BG%%", AREA_BG)
-    )
+    html = (template
+            .replace("%%IDX%%", str(idx))
+            .replace("%%TEXT%%", escape(text))
+            .replace("%%BG%%", THEME_BG)
+            .replace("%%TX%%", THEME_TX)
+            .replace("%%BORDER%%", BORDER_RG)
+            .replace("%%BTN_BG%%", BTN_BG)
+            .replace("%%AREA_BG%%", AREA_BG))
 
+    # Allow iframe to scroll if needed; textarea handles vertical scroll.
     components.html(html, height=380, scrolling=True)
 
 
