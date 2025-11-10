@@ -35,6 +35,7 @@ portfolio: Portfolio = st.session_state["portfolio"]
 st.markdown(
     """
 <style>
+/* ===== Base layout ===== */
 .block-container{max-width:1200px;padding-top:3.75rem;padding-bottom:3rem;overflow:visible}
 @keyframes pulseGradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 .hero-wrap{display:inline-flex;align-items:center;gap:.9rem;margin:.25rem auto .4rem;position:relative;left:50%;transform:translateX(-50%);overflow:visible}
@@ -49,8 +50,8 @@ hr{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(255,
 .stTextInput > div > div > input{height:3rem;font-size:1rem}
 pre, pre code { white-space: pre-wrap !important; word-break: break-word !important }
 
-/* ====================== EMAIL VIEWER ====================== */
-.plain-email{ margin-top:.3rem; margin-bottom:.15rem; }  /* super-tight gap */
+/* ===== Email viewer ===== */
+.plain-email{ margin-top:.3rem; margin-bottom:.15rem; }  /* tight gap */
 .email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.25rem; }
 .copy-btn{
   border:1px solid rgba(255,255,255,.15);
@@ -82,14 +83,7 @@ div[data-testid="stDownloadButton"]{
   padding-top:0 !important;
 }
 
-/* Mobile tweaks */
-@media (max-width:600px){
-  .plain-email{ margin-bottom:.1rem; }
-  div[data-testid="stDownloadButton"]{ margin-top:1px !important; }
-  .emailbox{ font-size:.98rem; line-height:1.5; padding:15px 13px; }
-}
-
-/* ====================== RESPONSIVE STYLES ====================== */
+/* ===== Responsive styles ===== */
 @media (max-width: 900px){
   .block-container{max-width:100%;padding-top:2.9rem;padding-left:1rem;padding-right:1rem}
   .hero-logo{width:48px;height:48px;padding:5px}
@@ -116,7 +110,7 @@ div[data-testid="stDownloadButton"]{
   section.main .stColumns { flex-direction: column !important; gap: .75rem !important }
   .stButton > button, .stDownloadButton > button { width:100% !important }
 
-  /* mobile: super-tight spacing */
+  /* mobile: tight email + button spacing + readable font */
   .plain-email{ margin-bottom:.1rem; }
   div[data-testid="stDownloadButton"]{ margin-top:1px !important; }
   .emailbox{ font-size:.98rem; line-height:1.5; padding:15px 13px; }
@@ -242,66 +236,46 @@ def _estimate_iframe_height_for(text: str) -> int:
 from html import escape
 import streamlit as st
 
-def render_plain_email(idx: int, text: str) -> None:
-    """Plain email viewer with Copy button (shows 'Copied!', no page jump)."""
-    html = f"""
-<div class="plain-email" id="email_wrap_{idx}">
-  <div class="email-toolbar">
-    <button class="copy-btn" id="copy_btn_{idx}" type="button">Copy</button>
-  </div>
+def render_plain_email(idx: int, text: str):
+    """Simple, responsive email block with working Copy. No iframe, no spacing bugs."""
+    st.markdown(
+        f"""
+        <div class="plain-email" id="email_wrap_{idx}">
+          <div class="email-toolbar">
+            <button class="copy-btn" id="copy_btn_{idx}">Copy</button>
+          </div>
 
-  <pre class="emailbox" id="email_view_{idx}">{escape(text)}</pre>
-  <!-- Hidden textarea for fallback copy; positioned so focusing it never scrolls -->
-  <textarea id="copy_src_{idx}" class="hidden-copy" aria-hidden="true" tabindex="-1" readonly>{escape(text)}</textarea>
-</div>
+          <pre class="emailbox" id="email_view_{idx}">{escape(text)}</pre>
+          <textarea id="copy_src_{idx}" class="hidden-copy" readonly>{escape(text)}</textarea>
+        </div>
 
-<script>
-(function() {{
-  const btn = document.getElementById("copy_btn_{idx}");
-  const src = document.getElementById("copy_src_{idx}");
-  if (!btn || !src) return;
+        <script>
+        (function() {{
+          const btn = document.getElementById("copy_btn_{idx}");
+          const src = document.getElementById("copy_src_{idx}");
+          if (btn && src) {{
+            btn.addEventListener("click", async () => {{
+              try {{
+                src.focus();
+                src.select();
+                const ok = document.execCommand("copy");
+                if (!ok && navigator.clipboard) {{
+                  await navigator.clipboard.writeText(src.value);
+                }}
+                const old = btn.innerText;
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = old, 1100);
+              }} catch (e) {{
+                console.error("Copy failed", e);
+              }}
+            }});
+          }}
+        }})();
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
 
-  btn.addEventListener("click", async (e) => {{
-    e.preventDefault();
-    e.stopPropagation();
-
-    const old = btn.textContent;
-    btn.disabled = true;
-
-    // lock scroll so the page doesn't jump when we focus/select
-    const sx = window.scrollX, sy = window.scrollY;
-
-    try {{
-      const txt = src.value;
-      if (navigator.clipboard && window.isSecureContext) {{
-        await navigator.clipboard.writeText(txt);
-      }} else {{
-        // fallback copy without scrolling the viewport
-        src.focus({{ preventScroll: true }});
-        src.select();
-        document.execCommand("copy");
-        src.blur();
-      }}
-      btn.textContent = "Copied!";
-      setTimeout(() => {{
-        btn.textContent = old;
-        btn.disabled = false;
-      }}, 1200);
-    }} catch (err) {{
-      console.error("Copy failed", err);
-      btn.textContent = "Copy failed";
-      setTimeout(() => {{
-        btn.textContent = old;
-        btn.disabled = false;
-      }}, 1200);
-    }} finally {{
-      window.scrollTo(sx, sy);
-    }}
-  }});
-}})();
-</script>
-"""
-    st.markdown(html, unsafe_allow_html=True)
 
 # --------------------- HERO ---------------------
 st.markdown(
