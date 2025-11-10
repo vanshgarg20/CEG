@@ -152,7 +152,7 @@ def download_name(prefix="email", ext="txt"):
 def render_plain_email(idx: int, text: str):
     """
     Email textarea + working Copy button rendered in an iframe with Streamlit theme colors.
-    Scrollbar always visible inside textarea.
+    Scrollbar visible (white color), works in both dark & light themes.
     """
     template = """<!doctype html>
 <html>
@@ -194,16 +194,23 @@ def render_plain_email(idx: int, text: str):
         resize:vertical;
         overflow-y:scroll;
       }
-      textarea::-webkit-scrollbar{
-        width:10px;
+
+      /* --- White Scrollbar --- */
+      textarea::-webkit-scrollbar {
+        width: 10px;
       }
-      textarea::-webkit-scrollbar-thumb{
-        background:rgba(120,120,120,.4);
-        border-radius:6px;
+      textarea::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.7);
+        border-radius: 6px;
       }
-      textarea::-webkit-scrollbar-thumb:hover{
-        background:rgba(150,150,150,.6);
+      textarea::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.9);
       }
+      textarea::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.15);
+        border-radius: 6px;
+      }
+
       @media (max-width:600px){
         textarea{height:260px;}
       }
@@ -248,6 +255,7 @@ def render_plain_email(idx: int, text: str):
     )
 
     components.html(html, height=380, scrolling=True)
+
 
 
 
