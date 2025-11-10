@@ -49,9 +49,9 @@ hr{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(255,
 .stTextInput > div > div > input{height:3rem;font-size:1rem}
 pre, pre code { white-space: pre-wrap !important; word-break: break-word !important }
 
-/* Email viewer (no iframe) */
-.plain-email{ margin-top:.5rem; margin-bottom:.75rem; }
-.email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.5rem; }
+/* ====================== EMAIL VIEWER ====================== */
+.plain-email{ margin-top:.5rem; margin-bottom:.4rem; }  /* tighter bottom margin */
+.email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.45rem; }
 .copy-btn{
   border:1px solid rgba(255,255,255,.15);
   background:rgba(255,255,255,.08);
@@ -68,6 +68,14 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
 }
 .hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
 
+/* Tighten spacing before Download button (desktop + mobile) */
+div[data-testid="stDownloadButton"]{
+  margin-top:6px !important;
+  margin-bottom:0 !important;
+  padding-top:0 !important;
+}
+
+/* ====================== RESPONSIVE STYLES ====================== */
 @media (max-width: 900px){
   .block-container{max-width:100%;padding-top:2.9rem;padding-left:1rem;padding-right:1rem}
   .hero-logo{width:48px;height:48px;padding:5px}
@@ -79,6 +87,7 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
   .badge{font-size:.72rem}
   .stTextInput > div > div > input{height:2.6rem;font-size:.95rem}
 }
+
 @media (max-width: 600px){
   .block-container{padding-top:3.3rem;padding-left:.75rem;padding-right:.75rem}
   .hero-wrap{gap:.6rem}
@@ -92,6 +101,10 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
   .stTextInput > div > div > input{height:2.4rem;font-size:.95rem}
   section.main .stColumns { flex-direction: column !important; gap: .75rem !important }
   .stButton > button, .stDownloadButton > button { width:100% !important }
+
+  /* mobile: even tighter email-download spacing */
+  .plain-email{ margin-bottom:.32rem; }
+  div[data-testid="stDownloadButton"]{ margin-top:4px !important; }
   .emailbox{ font-size:.98rem; line-height:1.5; padding:15px 13px; }
 }
 </style>
