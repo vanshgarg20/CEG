@@ -76,6 +76,16 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
     unsafe_allow_html=True,
 )
 
+# ---- THEME COLORS (fallbacks if theme not set) ----
+BASE = (st.get_option("theme.base") or "dark").lower()
+THEME_BG  = st.get_option("theme.backgroundColor") or ("#0E1117" if BASE == "dark" else "#FFFFFF")
+THEME_TX  = st.get_option("theme.textColor")       or ("#FAFAFA" if BASE == "dark" else "#0B0B0B")
+THEME_SEC = st.get_option("theme.secondaryBackgroundColor") or ("#262730" if BASE == "dark" else "#F0F2F6")
+BORDER_RG = "rgba(255,255,255,.15)" if BASE == "dark" else "rgba(0,0,0,.12)"
+BTN_BG    = "rgba(255,255,255,.08)" if BASE == "dark" else "rgba(0,0,0,.05)"
+AREA_BG   = "rgba(255,255,255,.03)" if BASE == "dark" else "rgba(0,0,0,.02)"
+
+
 # --------------------- SIDEBAR ---------------------
 with st.sidebar:
     st.header("⚙️ Settings")
@@ -141,27 +151,69 @@ def download_name(prefix="email", ext="txt"):
 
 def render_plain_email(idx: int, text: str):
     """
-    Email textarea + working Copy button.
-    Uses placeholders (%%IDX%%, %%TEXT%%) to avoid Python f-string brace issues.
+    Email textarea + working Copy button rendered in an iframe with Streamlit theme colors.
+    Scrollbar always visible inside textarea.
     """
     template = """<!doctype html>
 <html>
-  <body style="margin:0;padding:0;background:transparent;color:inherit;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;">
-    <div style="margin-top:8px;">
-      <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-bottom:.4rem">
-        <button id="copy_btn_%%IDX%%"
-          style="border:1px solid rgba(255,255,255,.15);
-                 background:rgba(255,255,255,.08);
-                 padding:.35rem .7rem;border-radius:8px;cursor:pointer;">
-          Copy
-        </button>
-      </div>
-      <textarea id="email_%%IDX%%" readonly
-        style="width:100%;height:300px;border:1px solid rgba(255,255,255,.15);
-               background:rgba(255,255,255,.03);color:inherit;border-radius:12px;
-               padding:.75rem;font: 0.92rem/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
-               resize:vertical;">%%TEXT%%</textarea>
+  <head>
+    <meta charset="utf-8"/>
+    <style>
+      html,body{
+        margin:0;padding:0;
+        background:%%BG%%;
+        color:%%TX%%;
+        font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+        overflow-y:auto;
+      }
+      .toolbar{
+        display:flex;
+        justify-content:flex-end;
+        gap:.5rem;
+        margin:8px 0 6px;
+      }
+      .btn{
+        border:1px solid %%BORDER%%;
+        background:%%BTN_BG%%;
+        padding:.35rem .7rem;
+        border-radius:8px;
+        cursor:pointer;
+        color:%%TX%%;
+        font-size:.9rem;
+      }
+      .btn:active{transform:translateY(1px)}
+      textarea{
+        width:100%;
+        height:300px;
+        border:1px solid %%BORDER%%;
+        background:%%AREA_BG%%;
+        color:%%TX%%;
+        border-radius:12px;
+        padding:.75rem;
+        font: 0.92rem/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+        resize:vertical;
+        overflow-y:scroll;
+      }
+      textarea::-webkit-scrollbar{
+        width:10px;
+      }
+      textarea::-webkit-scrollbar-thumb{
+        background:rgba(120,120,120,.4);
+        border-radius:6px;
+      }
+      textarea::-webkit-scrollbar-thumb:hover{
+        background:rgba(150,150,150,.6);
+      }
+      @media (max-width:600px){
+        textarea{height:260px;}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button id="copy_btn_%%IDX%%" class="btn">Copy</button>
     </div>
+    <textarea id="email_%%IDX%%" readonly>%%TEXT%%</textarea>
 
     <script>
       (function(){
@@ -188,9 +240,16 @@ def render_plain_email(idx: int, text: str):
         template
         .replace("%%IDX%%", str(idx))
         .replace("%%TEXT%%", escape(text))
+        .replace("%%BG%%", THEME_BG)
+        .replace("%%TX%%", THEME_TX)
+        .replace("%%BORDER%%", BORDER_RG)
+        .replace("%%BTN_BG%%", BTN_BG)
+        .replace("%%AREA_BG%%", AREA_BG)
     )
 
-    components.html(html, height=360, scrolling=False)
+    components.html(html, height=380, scrolling=True)
+
+
 
 # --------------------- HERO ---------------------
 st.markdown(
