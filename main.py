@@ -35,7 +35,6 @@ portfolio: Portfolio = st.session_state["portfolio"]
 st.markdown(
     """
 <style>
-/* ===== Base layout ===== */
 .block-container{max-width:1200px;padding-top:3.75rem;padding-bottom:3rem;overflow:visible}
 @keyframes pulseGradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 .hero-wrap{display:inline-flex;align-items:center;gap:.9rem;margin:.25rem auto .4rem;position:relative;left:50%;transform:translateX(-50%);overflow:visible}
@@ -50,9 +49,9 @@ hr{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(255,
 .stTextInput > div > div > input{height:3rem;font-size:1rem}
 pre, pre code { white-space: pre-wrap !important; word-break: break-word !important }
 
-/* ===== Email viewer ===== */
-.plain-email{ margin-top:.3rem; margin-bottom:.15rem; }  /* tight gap */
-.email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.25rem; }
+/* EMAIL VIEWER ORIGINAL */
+.plain-email{ margin-top:.5rem; margin-bottom:.75rem; }
+.email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.5rem; }
 .copy-btn{
   border:1px solid rgba(255,255,255,.15);
   background:rgba(255,255,255,.08);
@@ -67,23 +66,9 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
   font:0.92rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
 }
+.hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
 
-/* Hidden textarea for fallback copy (never scroll page) */
-.hidden-copy{
-  position: fixed;
-  top: -1000px; left: -1000px;
-  height: 1px; width: 1px;
-  opacity: 0; pointer-events: none;
-}
-
-/* Tight spacing before Streamlit download button */
-div[data-testid="stDownloadButton"]{
-  margin-top:1px !important;
-  margin-bottom:0 !important;
-  padding-top:0 !important;
-}
-
-/* ===== Responsive styles ===== */
+/* RESPONSIVE */
 @media (max-width: 900px){
   .block-container{max-width:100%;padding-top:2.9rem;padding-left:1rem;padding-right:1rem}
   .hero-logo{width:48px;height:48px;padding:5px}
@@ -95,7 +80,6 @@ div[data-testid="stDownloadButton"]{
   .badge{font-size:.72rem}
   .stTextInput > div > div > input{height:2.6rem;font-size:.95rem}
 }
-
 @media (max-width: 600px){
   .block-container{padding-top:3.3rem;padding-left:.75rem;padding-right:.75rem}
   .hero-wrap{gap:.6rem}
@@ -109,10 +93,6 @@ div[data-testid="stDownloadButton"]{
   .stTextInput > div > div > input{height:2.4rem;font-size:.95rem}
   section.main .stColumns { flex-direction: column !important; gap: .75rem !important }
   .stButton > button, .stDownloadButton > button { width:100% !important }
-
-  /* mobile: tight email + button spacing + readable font */
-  .plain-email{ margin-bottom:.1rem; }
-  div[data-testid="stDownloadButton"]{ margin-top:1px !important; }
   .emailbox{ font-size:.98rem; line-height:1.5; padding:15px 13px; }
 }
 </style>
@@ -237,14 +217,16 @@ from html import escape
 import streamlit as st
 
 def render_plain_email(idx: int, text: str):
-    """Simple, responsive email block with working Copy. No iframe, no spacing bugs."""
+    """
+    Simple, responsive email block with working Copy.
+    No iframe, no spacing bugs — this was your original stable version.
+    """
     st.markdown(
         f"""
         <div class="plain-email" id="email_wrap_{idx}">
           <div class="email-toolbar">
             <button class="copy-btn" id="copy_btn_{idx}">Copy</button>
           </div>
-
           <pre class="emailbox" id="email_view_{idx}">{escape(text)}</pre>
           <textarea id="copy_src_{idx}" class="hidden-copy" readonly>{escape(text)}</textarea>
         </div>
@@ -275,7 +257,6 @@ def render_plain_email(idx: int, text: str):
         """,
         unsafe_allow_html=True,
     )
-
 
 # --------------------- HERO ---------------------
 st.markdown(
