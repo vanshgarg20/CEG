@@ -159,13 +159,17 @@ def download_name(prefix="email", ext="txt"):
 import streamlit.components.v1 as components
 from html import escape
 
+# ---- (optional) tweakable knobs at top of your file ----
+EMAIL_BOX_DESKTOP_HEIGHT = 300   # visual minimum height on desktop
+EMAIL_BOX_RADIUS         = 12
+EMAIL_FONT_SIZE_DESKTOP  = "0.92rem"
+EMAIL_FONT_SIZE_MOBILE   = "0.98rem"
+EMAIL_LINE_HEIGHT        = "1.5"
+
 def render_plain_email(idx: int, text: str):
     """
-    Responsive email viewer with working Copy:
-    - Desktop: fixed medium height (customizable), no inner scroll.
-      Content is fully visible because the iframe auto-resizes to the block's height.
-    - Mobile: auto-expands to fit the full email (no clipping, no inner scroll).
-    - No focus outline/border glitch; theme colors applied.
+    Responsive, non-scroll email viewer with Copy button.
+    FIX: iframe auto-resizes robustly to prevent Download button overlap.
     """
     template = """<!doctype html>
 <html>
@@ -193,6 +197,7 @@ def render_plain_email(idx: int, text: str):
       }
       .wrap{
         width:100%;
+        margin:0 0 18px 0; /* give space below iframe to avoid visual crowding */
       }
       .toolbar{
         display:flex; justify-content:flex-end; gap:.5rem;
@@ -204,30 +209,22 @@ def render_plain_email(idx: int, text: str):
       }
       .btn:active{ transform:translateY(1px); }
 
-      /* Email block (non-focusable, no outline) */
+      /* Non-focus email block (no white/blue focus ring) */
       .emailbox{
         background:var(--areabg);
         border:1px solid var(--border);
         border-radius:var(--radius);
         padding:14px;
-        margin:0 0 12px 0;          /* space above Download button (fixes desktop cut) */
         font: var(--fs-d)/var(--lh) ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-        white-space:pre-wrap;
-        word-break:break-word;
-        overflow-wrap:anywhere;
-        -webkit-tap-highlight-color: transparent;
+        white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
       }
       .emailbox:focus, .emailbox:focus-visible{ outline:0; box-shadow:none; }
 
-      /* Desktop default height (visual medium box) */
+      /* Desktop: medium visual height floor */
       @media (min-width:601px){
-        .emailbox{
-          max-height:none;
-          min-height:var(--h-d);
-        }
+        .emailbox{ min-height:var(--h-d); }
       }
-
-      /* Mobile: comfortable font & full height by content */
+      /* Mobile: comfy sizing; natural height */
       @media (max-width:600px){
         .emailbox{
           font-size:var(--fs-m);
@@ -236,10 +233,10 @@ def render_plain_email(idx: int, text: str):
         }
       }
 
-      /* Hidden textarea for exact-copy */
-      textarea.hidden-copy{
-        position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0;
-      }
+      /* Spacer at end ensures ResizeObserver sees the final size */
+      .sizer{ height:1px; margin-top:16px; }
+      /* Hidden textarea preserves exact line breaks for Copy */
+      textarea.hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
     </style>
   </head>
   <body>
@@ -248,48 +245,66 @@ def render_plain_email(idx: int, text: str):
         <button id="copy_btn_%%IDX%%" class="btn">Copy</button>
       </div>
 
-      <!-- Email content -->
       <pre id="email_view_%%IDX%%" class="emailbox">%%TEXT%%</pre>
-      <!-- Hidden source used for copy to preserve linebreaks exactly -->
+      <div id="sizer_%%IDX%%" class="sizer"></div>
       <textarea id="copy_src_%%IDX%%" class="hidden-copy" readonly>%%TEXT%%</textarea>
     </div>
 
     <script>
       (function(){
-        const btn = document.getElementById('copy_btn_%%IDX%%');
-        const src = document.getElementById('copy_src_%%IDX%%');
-        const view = document.getElementById('email_view_%%IDX%%');
+        const btn   = document.getElementById('copy_btn_%%IDX%%');
+        const src   = document.getElementById('copy_src_%%IDX%%');
+        const view  = document.getElementById('email_view_%%IDX%%');
+        const sizer = document.getElementById('sizer_%%IDX%%');
 
-        // Copy using hidden textarea (works everywhere, preserves formatting)
+        // Copy: use hidden textarea to keep exact formatting
         if (btn && src){
           btn.addEventListener('click', async () => {
             try{
               src.focus(); src.select();
               const ok = document.execCommand('copy');
-              if (!ok && navigator.clipboard) {
-                await navigator.clipboard.writeText(src.value);
-              }
+              if (!ok && navigator.clipboard) await navigator.clipboard.writeText(src.value);
               const old = btn.innerText; btn.innerText = 'Copied!';
               setTimeout(()=>btn.innerText = old, 1100);
             }catch(e){ console.error('Copy failed', e); }
           });
         }
 
-        // Ensure the iframe always fits content (desktop & mobile) — no clipping
-        function fitFrame() {
-          try {
-            const h = document.body.scrollHeight + 8; // little padding
+        // Robust iframe fitting — accounts for fonts, reflow, and late layout
+        function docHeight(){
+          const b = document.body, d = document.documentElement;
+          return Math.max(
+            b.scrollHeight, d.scrollHeight,
+            b.offsetHeight, d.offsetHeight,
+            b.clientHeight, d.clientHeight
+          ) + 16; // bottom padding
+        }
+        function fitFrame(){
+          try{
+            const h = docHeight();
             if (window.frameElement) window.frameElement.style.height = h + 'px';
-            document.documentElement.style.height = h + 'px';
-          } catch (_) {}
+            d.style.height = h + 'px';
+          }catch(_){}
+        }
+        const d = document.documentElement;
+
+        // Observe both the email view and spacer for any size changes
+        if (window.ResizeObserver){
+          const ro = new ResizeObserver(fitFrame);
+          ro.observe(document.body);
+          ro.observe(view);
+          ro.observe(sizer);
         }
 
-        // Observe size changes (fonts/rendering/viewport)
-        const ro = new ResizeObserver(fitFrame);
-        ro.observe(document.body);
+        // Fit on load, on resize, and after fonts load
         window.addEventListener('load', fitFrame);
+        window.addEventListener('resize', fitFrame);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitFrame);
+
+        // extra ticks to be super-safe
         setTimeout(fitFrame, 50);
         setTimeout(fitFrame, 300);
+        setTimeout(fitFrame, 800);
       })();
     </script>
   </body>
@@ -311,10 +326,8 @@ def render_plain_email(idx: int, text: str):
         .replace("%%H_DESKTOP%%", str(EMAIL_BOX_DESKTOP_HEIGHT))
     )
 
-    # Give initial space; iframe will then auto-resize to real height (no cut on desktop/mobile).
-    components.html(html, height=EMAIL_BOX_DESKTOP_HEIGHT + 120, scrolling=False)
-
-
+    # Initial height; iframe script will expand it so the Download button never overlaps.
+    components.html(html, height=EMAIL_BOX_DESKTOP_HEIGHT + 140, scrolling=False)
 
 
 # --------------------- HERO ---------------------
