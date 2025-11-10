@@ -151,54 +151,56 @@ def download_name(prefix="email", ext="txt"):
 
 def render_plain_email(idx: int, text: str):
     """
-    Simple static email box (medium default size), no scrollbars, no resize.
-    Copy button works perfectly.
+    Plain email box — desktop pe medium size; phone pe content ke hisaab se
+    auto-expand (no inner scroll). Iframe height JS se auto-resize hoti hai.
     """
     template = """<!doctype html>
 <html>
   <head>
     <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <style>
+      :root{
+        --bg: %%BG%%;
+        --tx: %%TX%%;
+        --border: %%BORDER%%;
+        --btnbg: %%BTN_BG%%;
+        --areabg: %%AREA_BG%%;
+      }
       html,body{
-        margin:0;
-        padding:0;
-        background:%%BG%%;
-        color:%%TX%%;
+        margin:0;padding:0;background:var(--bg);color:var(--tx);
         font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+        overflow-x:hidden; /* no sideways scroll */
       }
       .toolbar{
-        display:flex;
-        justify-content:flex-end;
-        margin-bottom:6px;
+        display:flex;justify-content:flex-end;margin-bottom:6px;
       }
       .btn{
-        border:1px solid %%BORDER%%;
-        background:%%BTN_BG%%;
-        color:%%TX%%;
-        padding:.35rem .7rem;
-        border-radius:8px;
-        cursor:pointer;
-        font-size:.9rem;
+        border:1px solid var(--border);background:var(--btnbg);color:var(--tx);
+        padding:.35rem .7rem;border-radius:8px;cursor:pointer;font-size:.9rem;
       }
-      .btn:active{
-        transform:translateY(1px);
-      }
+      .btn:active{transform:translateY(1px)}
+
+      /* Textarea defaults: desktop medium */
       textarea{
         width:100%;
-        height:300px; /* medium default box size */
-        border:1px solid %%BORDER%%;
-        background:%%AREA_BG%%;
-        color:%%TX%%;
-        border-radius:12px;
+        height:300px;               /* desktop medium default */
+        border:1px solid var(--border);
+        background:var(--areabg); color:var(--tx); border-radius:12px;
         padding:.75rem;
         font:0.92rem/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
-        white-space:pre-wrap;
-        word-wrap:break-word;
-        resize:none;          /* 🔒 disable resizing */
-        overflow:hidden;      /* 🚫 no scrollbars */
+        white-space:pre-wrap; word-wrap:break-word;
+        resize:none;                /* no grab-resizer */
+        overflow:hidden;            /* no inner scrollbars */
       }
+
+      /* Phone: let box auto-expand by content (height set via JS) */
       @media (max-width:600px){
-        textarea{height:260px;}
+        textarea{
+          height:auto;              /* JS will set exact height */
+          font-size:0.98rem;
+          line-height:1.5;
+        }
       }
     </style>
   </head>
@@ -210,26 +212,44 @@ def render_plain_email(idx: int, text: str):
 
     <script>
       (function(){
-        const btn = document.getElementById('copy_btn_%%IDX%%');
         const ta  = document.getElementById('email_%%IDX%%');
-        if (btn && ta) {
+        const btn = document.getElementById('copy_btn_%%IDX%%');
+
+        // Copy logic
+        if (btn && ta){
           btn.addEventListener('click', async () => {
-            try {
+            try{
               await navigator.clipboard.writeText(ta.value);
-              const old = btn.innerText;
-              btn.innerText = 'Copied!';
-              setTimeout(() => btn.innerText = old, 1300);
-            } catch (e) {
-              console.error('Copy failed', e);
-            }
+              const old = btn.innerText; btn.innerText = 'Copied!';
+              setTimeout(()=>btn.innerText = old, 1200);
+            }catch(e){ console.error('Copy failed', e); }
           });
         }
+
+        // Auto-resize textarea to fit content (no scroll)
+        function autoSize(){
+          if(!ta) return;
+          ta.style.height = 'auto';
+          ta.style.height = (ta.scrollHeight) + 'px';
+          // Also resize iframe so Streamlit doesn't clip on phone
+          try {
+            const h = document.body.scrollHeight + 8;         // padding
+            if (window.frameElement) window.frameElement.style.height = h + 'px';
+            document.documentElement.style.height = h + 'px';
+          } catch(_) {}
+        }
+
+        // Run on load + after fonts render
+        window.addEventListener('load', autoSize);
+        setTimeout(autoSize, 50);
+        setTimeout(autoSize, 300);
       })();
     </script>
   </body>
 </html>"""
 
-    html = (template
+    html = (
+        template
         .replace("%%IDX%%", str(idx))
         .replace("%%TEXT%%", escape(text))
         .replace("%%BG%%", THEME_BG)
@@ -239,7 +259,9 @@ def render_plain_email(idx: int, text: str):
         .replace("%%AREA_BG%%", AREA_BG)
     )
 
-    components.html(html, height=360, scrolling=False)
+    # Give initial room; inside JS we auto-resize the iframe height to match content.
+    components.html(html, height=380, scrolling=False)
+
 
 
 # --------------------- HERO ---------------------
