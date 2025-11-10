@@ -74,35 +74,7 @@ pre, pre code { white-space: pre-wrap !important; word-break: break-word !import
   .stButton > button, .stDownloadButton > button { width:100% !important }
 }
 </style>
-/* --- Email viewer (no iframe) --- */
-.plain-email{ margin-top:.5rem; margin-bottom:.75rem; } /* ⬅️ tight gap above Download */
-.email-toolbar{ display:flex; justify-content:flex-end; gap:.5rem; margin-bottom:.5rem; }
-.copy-btn{
-  border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.08);
-  padding:.35rem .7rem; border-radius:8px; cursor:pointer; color:inherit;
-}
-.copy-btn:active{ transform:translateY(1px) }
 
-/* the email text block (non-focus, no scrollbar) */
-.emailbox{
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:12px;
-  padding:14px;
-  font:0.92rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere;
-}
-
-/* phone tweaks */
-@media (max-width:600px){
-  .plain-email{ margin-bottom:.6rem; }
-  .emailbox{ font-size:.98rem; line-height:1.5; padding:16px 14px; }
-}
-
-/* hidden textarea used only for copy */
-.hidden-copy{ position:absolute; left:-9999px; top:-9999px; height:0; width:0; opacity:0; }
-""",
     unsafe_allow_html=True,
 )
 
