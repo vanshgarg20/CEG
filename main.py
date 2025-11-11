@@ -274,104 +274,67 @@ from textwrap import dedent
 from html import escape
 import streamlit as st
 
-def render_plain_email(idx: int, text: str):
-    """
-    FINAL ✅ WORKING VERSION
-    - Proper dark gray box
-    - Copy button inside top-right corner
-    - "Copied!" text feedback
-    - Clipboard works on both secure & insecure pages
-    - No page jump or focus bug
-    """
-    html = f"""
-    <style>
-      .email-wrapper {{
-        background: #1a1b1f;               /* Slightly lighter than #0E1117 */
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 14px 16px 18px 16px;
-        position: relative;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        color: #f5f5f5;
-        white-space: pre-wrap;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-        line-height: 1.5;
-        margin-top: 0.8rem;
-        margin-bottom: 0.5rem;
-      }}
-      .copy-btn {{
-        position: absolute;
-        top: 10px;
-        right: 12px;
-        padding: 4px 10px;
-        font-size: 0.85rem;
-        background: rgba(255,255,255,0.08);
-        color: #fff;
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }}
-      .copy-btn:hover {{
-        background: rgba(255,255,255,0.15);
-      }}
-      .copy-btn:active {{
-        transform: scale(0.97);
-      }}
-    </style>
+from html import escape
+import streamlit as st
+from textwrap import dedent
 
-    <div class="email-wrapper" id="email_wrap_{idx}">
-      <button class="copy-btn" id="copy_btn_{idx}">Copy</button>
-      <pre id="email_text_{idx}">{escape(text)}</pre>
+def render_plain_email(idx: int, text: str) -> None:
+    """Smooth dark-gray email box with working Copy → Copied! animation."""
+    html = f"""\
+<div class="plain-email" id="email_wrap_{idx}">
+  <div class="emailbox">
+    <div class="emailbox-toolbar">
+      <button class="copy-btn" id="copy_btn_{idx}" type="button">Copy</button>
     </div>
+    <div id="email_text_{idx}" class="email-text">{escape(text)}</div>
+  </div>
+</div>
 
-    <script>
-      (function() {{
-        const btn = document.getElementById("copy_btn_{idx}");
-        const textEl = document.getElementById("email_text_{idx}");
-        if (!btn || !textEl) return;
+<script>
+(function() {{
+  const btn = document.getElementById("copy_btn_{idx}");
+  const txtDiv = document.getElementById("email_text_{idx}");
+  if (!btn || !txtDiv) return;
 
-        async function copyText(txt) {{
-          try {{
-            if (navigator.clipboard && window.isSecureContext) {{
-              await navigator.clipboard.writeText(txt);
-            }} else {{
-              const textarea = document.createElement("textarea");
-              textarea.value = txt;
-              textarea.style.position = "fixed";
-              textarea.style.left = "-9999px";
-              textarea.style.top = "-9999px";
-              document.body.appendChild(textarea);
-              textarea.focus({{preventScroll:true}});
-              textarea.select();
-              document.execCommand("copy");
-              document.body.removeChild(textarea);
-            }}
-            btn.innerText = "Copied!";
-            btn.disabled = true;
-            setTimeout(() => {{
-              btn.innerText = "Copy";
-              btn.disabled = false;
-            }}, 1000);
-          }} catch (err) {{
-            console.error("Copy failed:", err);
-            btn.innerText = "Failed";
-            setTimeout(() => btn.innerText = "Copy", 1200);
-          }}
-        }}
+  btn.addEventListener("click", async (e) => {{
+    e.preventDefault();
+    e.stopPropagation();
+    const old = btn.innerText;
+    btn.disabled = true;
 
-        btn.addEventListener("click", (e) => {{
-          e.preventDefault();
-          const txt = textEl.innerText || textEl.textContent || "";
-          copyText(txt);
-        }});
-      }})();
-    </script>
-    """
-
-    st.markdown(html, unsafe_allow_html=True)
-
+    try {{
+      const text = txtDiv.innerText.trim();
+      if (navigator.clipboard && window.isSecureContext) {{
+        await navigator.clipboard.writeText(text);
+      }} else {{
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus({{preventScroll:true}});
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }}
+      btn.innerText = "Copied!";
+      setTimeout(() => {{
+        btn.innerText = old;
+        btn.disabled = false;
+      }}, 1000);
+    }} catch(err) {{
+      console.error("Copy failed", err);
+      btn.innerText = "Error";
+      setTimeout(() => {{
+        btn.innerText = old;
+        btn.disabled = false;
+      }}, 1000);
+    }}
+  }});
+}})();
+</script>
+"""
+    st.markdown(dedent(html), unsafe_allow_html=True)
 
 # --------------------- HERO ---------------------
 st.markdown(
