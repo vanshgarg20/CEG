@@ -267,13 +267,17 @@ from html import escape
 import streamlit as st
 from textwrap import dedent
 
+from html import escape
+import streamlit as st
+from textwrap import dedent
+
 def render_plain_email(idx: int, text: str) -> None:
-    """Smooth dark-gray email box with working Copy → Copied! animation."""
+    """Dark-gray email box with reliable Copy (clipboard + textarea fallback)."""
     html = f"""\
 <div class="plain-email" id="email_wrap_{idx}">
   <div class="emailbox">
     <div class="emailbox-toolbar">
-      <button class="copy-btn" id="copy_btn_{idx}" type="button">Copy</button>
+      <button class="copy-btn" id="copy_btn_{idx}" data-target="email_text_{idx}" type="button">Copy</button>
     </div>
     <div id="email_text_{idx}" class="email-text">{escape(text)}</div>
   </div>
@@ -281,50 +285,67 @@ def render_plain_email(idx: int, text: str) -> None:
 
 <script>
 (function() {{
-  const btn = document.getElementById("copy_btn_{idx}");
-  const txtDiv = document.getElementById("email_text_{idx}");
-  if (!btn || !txtDiv) return;
-
-  btn.addEventListener("click", async (e) => {{
-    e.preventDefault();
-    e.stopPropagation();
-    const old = btn.innerText;
-    btn.disabled = true;
-
-    try {{
-      const text = txtDiv.innerText.trim();
-      if (navigator.clipboard && window.isSecureContext) {{
-        await navigator.clipboard.writeText(text);
-      }} else {{
-        const ta = document.createElement('textarea');
-        ta.value = text;
+  // Attach one delegated listener per iframe/render
+  function copyText(txt) {{
+    // Try modern API first
+    if (navigator.clipboard && window.isSecureContext) {{
+      return navigator.clipboard.writeText(txt);
+    }}
+    // Fallback: hidden textarea (works without https)
+    return new Promise(function(resolve, reject){{
+      try {{
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.setAttribute('readonly', '');
         ta.style.position = 'fixed';
-        ta.style.top = '-9999px';
+        ta.style.top = '-10000px';
+        ta.style.left = '-10000px';
         document.body.appendChild(ta);
         ta.focus({{preventScroll:true}});
         ta.select();
-        document.execCommand('copy');
+        var ok = document.execCommand('copy');
         document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('execCommand failed'));
+      }} catch(e) {{
+        reject(e);
       }}
-      btn.innerText = "Copied!";
-      setTimeout(() => {{
-        btn.innerText = old;
-        btn.disabled = false;
-      }}, 1000);
-    }} catch(err) {{
-      console.error("Copy failed", err);
-      btn.innerText = "Error";
-      setTimeout(() => {{
-        btn.innerText = old;
-        btn.disabled = false;
-      }}, 1000);
-    }}
-  }});
+    }});
+  }}
+
+  const btn = document.getElementById("copy_btn_{idx}");
+  if (btn) {{
+    btn.addEventListener("click", function(ev){{
+      ev.preventDefault(); ev.stopPropagation();
+      const targetId = btn.getAttribute("data-target");
+      const el = document.getElementById(targetId);
+      if (!el) return;
+
+      const original = btn.textContent;
+      btn.disabled = true;
+
+      // Use textContent to preserve newlines reliably across browsers
+      const txt = (el.textContent || '').trim();
+
+      copyText(txt).then(function(){{
+        btn.textContent = "Copied!";
+        setTimeout(function(){{
+          btn.textContent = original;
+          btn.disabled = false;
+        }}, 1000);
+      }}).catch(function(err){{
+        console.error("Copy failed:", err);
+        btn.textContent = "Copy failed";
+        setTimeout(function(){{
+          btn.textContent = original;
+          btn.disabled = false;
+        }}, 1200);
+      }});
+    }});
+  }}
 }})();
 </script>
 """
     st.markdown(dedent(html), unsafe_allow_html=True)
-
 
 # --------------------- HERO ---------------------
 st.markdown(
